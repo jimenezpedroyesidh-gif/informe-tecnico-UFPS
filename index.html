@@ -227,28 +227,145 @@ function cargarImagen(event, signaturePad){
 }
 
 function expandirFirma(id){
+
     const canvasOriginal = document.getElementById(id);
+
     const overlay = document.createElement("div");
     overlay.className = "fullscreen-canvas";
+    overlay.style.display = "flex";
+    overlay.style.flexDirection = "column";
+    overlay.style.justifyContent = "center";
+    overlay.style.alignItems = "center";
+
+    // Mensaje orientación
+    const mensaje = document.createElement("div");
+    mensaje.innerHTML = "Para mejor precisión, use modo horizontal o lápiz digital.";
+    mensaje.style.fontWeight = "bold";
+    mensaje.style.color = "#b00020";
+    mensaje.style.marginBottom = "10px";
+    overlay.appendChild(mensaje);
+
+    // Selector grosor
+    const selectorGrosor = document.createElement("select");
+    selectorGrosor.innerHTML = `
+        <option value="1">Trazo Fino</option>
+        <option value="2" selected>Trazo Medio</option>
+        <option value="3">Trazo Grueso</option>
+    `;
+    selectorGrosor.style.marginBottom = "10px";
+    overlay.appendChild(selectorGrosor);
+
     const nuevoCanvas = document.createElement("canvas");
+    nuevoCanvas.style.width = "100%";
+    nuevoCanvas.style.height = "70vh";
+    nuevoCanvas.style.border = "3px solid #b00020";
+    nuevoCanvas.style.background = "white";
     overlay.appendChild(nuevoCanvas);
-    const btn = document.createElement("button");
-    btn.innerText = "Guardar y Cerrar";
-    overlay.appendChild(btn);
+
+    const botones = document.createElement("div");
+    botones.style.display = "flex";
+    botones.style.width = "100%";
+    botones.style.gap = "10px";
+    botones.style.marginTop = "10px";
+
+    const btnLimpiar = document.createElement("button");
+    btnLimpiar.innerText = "Limpiar";
+    btnLimpiar.style.flex = "1";
+
+    const btnCerrar = document.createElement("button");
+    btnCerrar.innerText = "Guardar y Cerrar";
+    btnCerrar.style.flex = "1";
+
+    botones.appendChild(btnLimpiar);
+    botones.appendChild(btnCerrar);
+    overlay.appendChild(botones);
+
     document.body.appendChild(overlay);
-    const firmaGrande = new SignaturePad(nuevoCanvas);
-    btn.onclick = function(){
-        const img = firmaGrande.toDataURL();
+
+    // DPI alta resolución
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    nuevoCanvas.width = nuevoCanvas.offsetWidth * ratio;
+    nuevoCanvas.height = nuevoCanvas.offsetHeight * ratio;
+    nuevoCanvas.getContext("2d").scale(ratio, ratio);
+
+    let firmaGuardada = false;
+
+    const firmaGrande = new SignaturePad(nuevoCanvas,{
+        minWidth:1,
+        maxWidth:2.5,
+        throttle:0,
+        velocityFilterWeight:0.6
+    });
+
+    // Stylus detection
+    nuevoCanvas.addEventListener("pointerdown", function(e){
+        if(e.pointerType === "pen"){
+            mensaje.innerHTML = "Modo lápiz detectado ✍ Precisión máxima activada";
+        }
+    });
+
+    // Selector grosor dinámico
+    selectorGrosor.addEventListener("change", function(){
+        const valor = parseFloat(this.value);
+        firmaGrande.minWidth = valor;
+        firmaGrande.maxWidth = valor + 1.5;
+    });
+
+    // Bloqueo orientación horizontal
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("landscape").catch(()=>{});
+    }
+
+    // Evitar doble firma accidental
+    btnCerrar.onclick = function(){
+
+        if(firmaGuardada){
+            alert("La firma ya fue guardada.");
+            return;
+        }
+
+        if(firmaGrande.isEmpty()){
+            alert("Debe realizar la firma antes de guardar.");
+            return;
+        }
+
+        firmaGuardada = true;
+
+        const img = firmaGrande.toDataURL("image/png");
+
         const ctx = canvasOriginal.getContext("2d");
         const image = new Image();
         image.onload = function(){
             ctx.clearRect(0,0,canvasOriginal.width,canvasOriginal.height);
             ctx.drawImage(image,0,0,canvasOriginal.width,canvasOriginal.height);
-        }
+        };
         image.src = img;
+
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+
         document.body.removeChild(overlay);
+    };
+
+    btnLimpiar.onclick = function(){
+        firmaGrande.clear();
+        firmaGuardada = false;
+    };
+
+    // Detectar orientación actual
+    function verificarOrientacion(){
+        if(window.innerHeight > window.innerWidth){
+            mensaje.style.display = "block";
+        } else {
+            mensaje.style.display = "none";
+        }
     }
+
+    verificarOrientacion();
+    window.addEventListener("resize", verificarOrientacion);
 }
+
 
 function generarPDF(){
 
@@ -345,5 +462,6 @@ function generarPDF(){
 
 </body>
 </html>
+
 
 
