@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Informe Técnico Institucional</title>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
@@ -236,25 +236,19 @@ function expandirFirma(id){
     overlay.style.left = "0";
     overlay.style.width = "100vw";
     overlay.style.height = "100vh";
-    overlay.style.background = "#ffffff";
+    overlay.style.background = "#fff";
     overlay.style.zIndex = "9999";
     overlay.style.display = "flex";
     overlay.style.flexDirection = "column";
     overlay.style.padding = "10px";
     overlay.style.boxSizing = "border-box";
 
-    const header = document.createElement("div");
-    header.innerHTML = "Gire el dispositivo en horizontal para mayor precisión";
-    header.style.textAlign = "center";
-    header.style.fontWeight = "bold";
-    header.style.color = "#b00020";
-    header.style.marginBottom = "8px";
-    overlay.appendChild(header);
-
     const canvasContainer = document.createElement("div");
     canvasContainer.style.flex = "1";
-    canvasContainer.style.position = "relative";
     canvasContainer.style.width = "100%";
+    canvasContainer.style.display = "flex";
+    canvasContainer.style.alignItems = "center";
+    canvasContainer.style.justifyContent = "center";
     overlay.appendChild(canvasContainer);
 
     const nuevoCanvas = document.createElement("canvas");
@@ -262,13 +256,13 @@ function expandirFirma(id){
     nuevoCanvas.style.height = "100%";
     nuevoCanvas.style.border = "3px solid #b00020";
     nuevoCanvas.style.borderRadius = "12px";
-    nuevoCanvas.style.background = "#fff";
+    nuevoCanvas.style.touchAction = "none"; // 🔥 importante para precisión
     canvasContainer.appendChild(nuevoCanvas);
 
-    const footer = document.createElement("div");
-    footer.style.display = "flex";
-    footer.style.gap = "10px";
-    footer.style.marginTop = "10px";
+    const botones = document.createElement("div");
+    botones.style.display = "flex";
+    botones.style.gap = "10px";
+    botones.style.marginTop = "10px";
 
     const btnLimpiar = document.createElement("button");
     btnLimpiar.innerText = "Limpiar";
@@ -278,37 +272,49 @@ function expandirFirma(id){
     btnGuardar.innerText = "Guardar";
     btnGuardar.style.flex = "1";
 
-    footer.appendChild(btnLimpiar);
-    footer.appendChild(btnGuardar);
-    overlay.appendChild(footer);
+    botones.appendChild(btnLimpiar);
+    botones.appendChild(btnGuardar);
+    overlay.appendChild(botones);
 
     document.body.appendChild(overlay);
 
-    // 🔥 Ajuste REAL responsive
+    let firmaGrande;
+
     function ajustarCanvas(){
 
-        const viewport = window.visualViewport || window;
-        const width = canvasContainer.clientWidth;
-        const height = canvasContainer.clientHeight;
+        const rect = canvasContainer.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
 
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        // 🔥 Asignar tamaño interno EXACTO
+        nuevoCanvas.width = rect.width * ratio;
+        nuevoCanvas.height = rect.height * ratio;
 
-        nuevoCanvas.width = width * ratio;
-        nuevoCanvas.height = height * ratio;
-        nuevoCanvas.getContext("2d").scale(ratio, ratio);
+        // 🔥 Mantener tamaño visual
+        nuevoCanvas.style.width = rect.width + "px";
+        nuevoCanvas.style.height = rect.height + "px";
+
+        const ctx = nuevoCanvas.getContext("2d");
+        ctx.setTransform(1,0,0,1,0,0); // reset transform
+        ctx.scale(ratio, ratio);
+
+        if(firmaGrande){
+            const data = firmaGrande.toData();
+            firmaGrande.clear();
+            firmaGrande.fromData(data);
+        }
     }
 
     ajustarCanvas();
 
+    firmaGrande = new SignaturePad(nuevoCanvas,{
+        minWidth: 0.7,
+        maxWidth: 2.2,
+        throttle: 0,
+        velocityFilterWeight: 0.65
+    });
+
     window.addEventListener("resize", ajustarCanvas);
     window.addEventListener("orientationchange", ajustarCanvas);
-
-    const firmaGrande = new SignaturePad(nuevoCanvas,{
-        minWidth: 0.8,
-        maxWidth: 2.5,
-        throttle: 0,
-        velocityFilterWeight: 0.6
-    });
 
     btnLimpiar.onclick = function(){
         firmaGrande.clear();
@@ -335,12 +341,8 @@ function expandirFirma(id){
         window.removeEventListener("resize", ajustarCanvas);
         window.removeEventListener("orientationchange", ajustarCanvas);
     };
-
-    // Intentar bloquear horizontal
-    if(screen.orientation && screen.orientation.lock){
-        screen.orientation.lock("landscape").catch(()=>{});
-    }
 }
+
 
 function generarPDF(){
 
@@ -437,6 +439,7 @@ function generarPDF(){
 
 </body>
 </html>
+
 
 
 
