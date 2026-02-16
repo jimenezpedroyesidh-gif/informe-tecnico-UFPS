@@ -231,105 +231,95 @@ function expandirFirma(id){
     const canvasOriginal = document.getElementById(id);
 
     const overlay = document.createElement("div");
-    overlay.className = "fullscreen-canvas";
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100vw";
+    overlay.style.height = "100vh";
+    overlay.style.background = "#ffffff";
+    overlay.style.zIndex = "9999";
     overlay.style.display = "flex";
     overlay.style.flexDirection = "column";
-    overlay.style.justifyContent = "center";
-    overlay.style.alignItems = "center";
+    overlay.style.padding = "10px";
+    overlay.style.boxSizing = "border-box";
 
-    // Mensaje orientación
-    const mensaje = document.createElement("div");
-    mensaje.innerHTML = "Para mejor precisión, use modo horizontal o lápiz digital.";
-    mensaje.style.fontWeight = "bold";
-    mensaje.style.color = "#b00020";
-    mensaje.style.marginBottom = "10px";
-    overlay.appendChild(mensaje);
+    const header = document.createElement("div");
+    header.innerHTML = "Gire el dispositivo en horizontal para mayor precisión";
+    header.style.textAlign = "center";
+    header.style.fontWeight = "bold";
+    header.style.color = "#b00020";
+    header.style.marginBottom = "8px";
+    overlay.appendChild(header);
 
-    // Selector grosor
-    const selectorGrosor = document.createElement("select");
-    selectorGrosor.innerHTML = `
-        <option value="1">Trazo Fino</option>
-        <option value="2" selected>Trazo Medio</option>
-        <option value="3">Trazo Grueso</option>
-    `;
-    selectorGrosor.style.marginBottom = "10px";
-    overlay.appendChild(selectorGrosor);
+    const canvasContainer = document.createElement("div");
+    canvasContainer.style.flex = "1";
+    canvasContainer.style.position = "relative";
+    canvasContainer.style.width = "100%";
+    overlay.appendChild(canvasContainer);
 
     const nuevoCanvas = document.createElement("canvas");
     nuevoCanvas.style.width = "100%";
-    nuevoCanvas.style.height = "70vh";
+    nuevoCanvas.style.height = "100%";
     nuevoCanvas.style.border = "3px solid #b00020";
-    nuevoCanvas.style.background = "white";
-    overlay.appendChild(nuevoCanvas);
+    nuevoCanvas.style.borderRadius = "12px";
+    nuevoCanvas.style.background = "#fff";
+    canvasContainer.appendChild(nuevoCanvas);
 
-    const botones = document.createElement("div");
-    botones.style.display = "flex";
-    botones.style.width = "100%";
-    botones.style.gap = "10px";
-    botones.style.marginTop = "10px";
+    const footer = document.createElement("div");
+    footer.style.display = "flex";
+    footer.style.gap = "10px";
+    footer.style.marginTop = "10px";
 
     const btnLimpiar = document.createElement("button");
     btnLimpiar.innerText = "Limpiar";
     btnLimpiar.style.flex = "1";
 
-    const btnCerrar = document.createElement("button");
-    btnCerrar.innerText = "Guardar y Cerrar";
-    btnCerrar.style.flex = "1";
+    const btnGuardar = document.createElement("button");
+    btnGuardar.innerText = "Guardar";
+    btnGuardar.style.flex = "1";
 
-    botones.appendChild(btnLimpiar);
-    botones.appendChild(btnCerrar);
-    overlay.appendChild(botones);
+    footer.appendChild(btnLimpiar);
+    footer.appendChild(btnGuardar);
+    overlay.appendChild(footer);
 
     document.body.appendChild(overlay);
 
-    // DPI alta resolución
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    nuevoCanvas.width = nuevoCanvas.offsetWidth * ratio;
-    nuevoCanvas.height = nuevoCanvas.offsetHeight * ratio;
-    nuevoCanvas.getContext("2d").scale(ratio, ratio);
+    // 🔥 Ajuste REAL responsive
+    function ajustarCanvas(){
 
-    let firmaGuardada = false;
+        const viewport = window.visualViewport || window;
+        const width = canvasContainer.clientWidth;
+        const height = canvasContainer.clientHeight;
 
-    const firmaGrande = new SignaturePad(nuevoCanvas,{
-        minWidth:1,
-        maxWidth:2.5,
-        throttle:0,
-        velocityFilterWeight:0.6
-    });
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
-    // Stylus detection
-    nuevoCanvas.addEventListener("pointerdown", function(e){
-        if(e.pointerType === "pen"){
-            mensaje.innerHTML = "Modo lápiz detectado ✍ Precisión máxima activada";
-        }
-    });
-
-    // Selector grosor dinámico
-    selectorGrosor.addEventListener("change", function(){
-        const valor = parseFloat(this.value);
-        firmaGrande.minWidth = valor;
-        firmaGrande.maxWidth = valor + 1.5;
-    });
-
-    // Bloqueo orientación horizontal
-    if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock("landscape").catch(()=>{});
+        nuevoCanvas.width = width * ratio;
+        nuevoCanvas.height = height * ratio;
+        nuevoCanvas.getContext("2d").scale(ratio, ratio);
     }
 
-    // Evitar doble firma accidental
-    btnCerrar.onclick = function(){
+    ajustarCanvas();
 
-        if(firmaGuardada){
-            alert("La firma ya fue guardada.");
-            return;
-        }
+    window.addEventListener("resize", ajustarCanvas);
+    window.addEventListener("orientationchange", ajustarCanvas);
+
+    const firmaGrande = new SignaturePad(nuevoCanvas,{
+        minWidth: 0.8,
+        maxWidth: 2.5,
+        throttle: 0,
+        velocityFilterWeight: 0.6
+    });
+
+    btnLimpiar.onclick = function(){
+        firmaGrande.clear();
+    };
+
+    btnGuardar.onclick = function(){
 
         if(firmaGrande.isEmpty()){
-            alert("Debe realizar la firma antes de guardar.");
+            alert("Debe firmar antes de guardar.");
             return;
         }
-
-        firmaGuardada = true;
 
         const img = firmaGrande.toDataURL("image/png");
 
@@ -341,31 +331,16 @@ function expandirFirma(id){
         };
         image.src = img;
 
-        if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-        }
-
         document.body.removeChild(overlay);
+        window.removeEventListener("resize", ajustarCanvas);
+        window.removeEventListener("orientationchange", ajustarCanvas);
     };
 
-    btnLimpiar.onclick = function(){
-        firmaGrande.clear();
-        firmaGuardada = false;
-    };
-
-    // Detectar orientación actual
-    function verificarOrientacion(){
-        if(window.innerHeight > window.innerWidth){
-            mensaje.style.display = "block";
-        } else {
-            mensaje.style.display = "none";
-        }
+    // Intentar bloquear horizontal
+    if(screen.orientation && screen.orientation.lock){
+        screen.orientation.lock("landscape").catch(()=>{});
     }
-
-    verificarOrientacion();
-    window.addEventListener("resize", verificarOrientacion);
 }
-
 
 function generarPDF(){
 
@@ -462,6 +437,7 @@ function generarPDF(){
 
 </body>
 </html>
+
 
 
 
