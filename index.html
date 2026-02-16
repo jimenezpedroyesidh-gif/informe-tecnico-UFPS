@@ -3,233 +3,347 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Informe Técnico UFPS</title>
+<title>Informe Técnico Institucional</title>
 
-<link rel="manifest" href="manifest.json">
-
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <style>
-*{box-sizing:border-box;}
-
 body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:#f2f2f2;
+    font-family:'Segoe UI', sans-serif;
+    background:#f4f4f4;
+    padding:20px;
 }
-
-.header{
-    display:flex;
-    align-items:center;
-    background:#d40000;
-    color:white;
-    padding:10px;
-}
-
-.header img{
-    height:60px;
-    margin-right:15px;
-}
-
-.header-text{
-    font-weight:bold;
-}
-
 .container{
     max-width:1000px;
     margin:auto;
-    padding:15px;
     background:white;
+    padding:30px;
+    border-radius:12px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.1);
 }
-
+.header{
+    text-align:center;
+    border-bottom:4px solid #b00020;
+    padding-bottom:15px;
+    margin-bottom:25px;
+}
+.header h1{
+    color:#b00020;
+    margin:0;
+}
+.header img{
+    max-width:100%;
+    height:auto;
+    margin-bottom:10px;
+}
 .section{
-    margin-bottom:15px;
+    margin-bottom:20px;
 }
-
 .section h3{
-    background:#d40000;
+    background:#b00020;
     color:white;
-    padding:6px;
+    padding:8px;
+    border-radius:6px;
     font-size:14px;
 }
-
-input,textarea,select{
+input, textarea, select{
     width:100%;
-    padding:10px;
-    margin:6px 0;
+    padding:8px;
+    margin-top:5px;
+    margin-bottom:10px;
     border-radius:6px;
     border:1px solid #ccc;
 }
-
-textarea{min-height:90px;}
-
 canvas{
+    border:2px solid #b00020;
     width:100%;
-    height:180px;
-    border:2px solid #d40000;
+    height:140px;
+    border-radius:6px;
 }
-
 button{
-    width:100%;
-    padding:12px;
-    background:#d40000;
+    padding:10px 15px;
+    background:#b00020;
     color:white;
     border:none;
     border-radius:6px;
-    margin-top:6px;
+    cursor:pointer;
+    margin-top:5px;
 }
-
-button:hover{background:#990000;}
-
-@media(max-width:600px){
-    canvas{height:220px;}
+button:hover{
+    background:#7a0015;
+}
+.hidden{
+    display:none;
+}
+@media (max-width:600px){
+    .container{
+        padding:12px;
+        border-radius:0;
+        box-shadow:none;
+    }
+    .header h1{
+        font-size:18px;
+    }
+    input, textarea, select{
+        font-size:16px;
+    }
+    canvas{
+        height:200px;
+    }
+}
+.fullscreen-canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:white;
+    z-index:9999;
+    padding:20px;
+}
+.fullscreen-canvas canvas{
+    width:100%;
+    height:60vh;
 }
 </style>
 </head>
 <body>
 
-<div class="header">
-<img src="logo.png">
-<div class="header-text">
-DEPARTAMENTO DE SISTEMAS E INFORMATICA<br>
-FORMATO PARA INFORME TECNICO
-</div>
-</div>
-
 <div class="container">
 
-<div class="section">
-<h3>Consecutivo</h3>
-<input id="consecutivo" readonly>
+<div class="header">
+<img src="logo.png">
+<h1>INFORME TÉCNICO</h1>
 </div>
 
 <div class="section">
-<h3>Fecha</h3>
+<h3>Tipo de Informe</h3>
+<select id="tipoInforme" onchange="cambiarTipo()">
+<option value="mantenimiento">Oficina de Mantenimiento</option>
+<option value="reparacion">Reparación en Oficina</option>
+</select>
+</div>
+
+<div class="section">
+<h3>1. Ficha Técnica</h3>
+Fecha:
 <input type="date" id="fecha">
 </div>
 
 <div class="section">
-<h3>Dependencia</h3>
-<input id="dependencia">
-<input id="ubicacion" placeholder="Ubicación">
+<h3>2. Descripción Dependencia</h3>
+Dependencia:
+<input type="text" id="dependencia">
+Ubicación:
+<input type="text" id="ubicacion">
+Código DATASOFT (Opcional):
+<input type="text" id="datasoft">
 </div>
 
 <div class="section">
-<h3>Equipo</h3>
-<input id="equipo">
-<input id="serial" placeholder="Serial">
-<input id="inventario" placeholder="Inventario">
+<h3>3. Descripción del Equipo</h3>
+Equipo:
+<input type="text" id="equipo">
+Serial:
+<input type="text" id="serial">
+Inventario:
+<input type="text" id="inventario">
 </div>
 
 <div class="section">
-<h3>Descripción</h3>
-<textarea id="descripcion"></textarea>
+<h3>4. Diagnóstico</h3>
+<textarea id="diagnostico"></textarea>
+</div>
+
+<div class="section">
+<h3>5. Procedimiento</h3>
+<textarea id="procedimiento"></textarea>
+</div>
+
+<div class="section">
+<h3>6. Conclusión</h3>
+<textarea id="conclusion"></textarea>
 </div>
 
 <div class="section">
 <h3>Firma Técnico</h3>
-<input id="nombreTec" placeholder="Nombre">
-<input id="cargoTec" placeholder="Cargo">
+Nombre:
+<input type="text" id="nombreTec">
+Cargo:
+<input type="text" id="cargoTec">
+<input type="file" id="uploadTec" accept="image/*">
 <canvas id="firmaTec"></canvas>
 <button onclick="firmaTec.clear()">Limpiar</button>
+<button onclick="expandirFirma('firmaTec')">Expandir Firma</button>
 </div>
 
-<button onclick="generarPDF()">Generar Informe PDF</button>
+<div class="section hidden" id="bloqueResponsable">
+<h3>Firma Responsable</h3>
+Nombre:
+<input type="text" id="nombreRes">
+Cargo:
+<input type="text" id="cargoRes">
+<input type="file" id="uploadRes" accept="image/*">
+<canvas id="firmaRes"></canvas>
+<button onclick="firmaRes.clear()">Limpiar</button>
+<button onclick="expandirFirma('firmaRes')">Expandir Firma</button>
+</div>
+
+<br>
+<button onclick="generarPDF()">Generar Informe Profesional</button>
 
 </div>
 
 <script>
+const firmaTec = new SignaturePad(document.getElementById("firmaTec"));
+const firmaRes = new SignaturePad(document.getElementById("firmaRes"));
 
-// -------- NUMERACIÓN AUTOMÁTICA --------
-
-function generarConsecutivo(){
-    let num = localStorage.getItem("contadorInforme");
-    if(!num){ num = 1; }
-    else{ num = parseInt(num)+1; }
-    localStorage.setItem("contadorInforme", num);
-
-    const año = new Date().getFullYear();
-    const formato = "IT-"+año+"-"+String(num).padStart(4,'0');
-    document.getElementById("consecutivo").value = formato;
-}
-generarConsecutivo();
-
-// -------- FIRMA PRECISA --------
-
-function crearFirma(canvas){
-    const signaturePad = new SignaturePad(canvas,{
-        minWidth:0.8,
-        maxWidth:2.5,
-        throttle:0
-    });
-
-    function resizeCanvas(){
-        const ratio = Math.max(window.devicePixelRatio||1,1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext("2d").scale(ratio,ratio);
-        signaturePad.clear();
+function cambiarTipo(){
+    if(tipoInforme.value === "reparacion"){
+        bloqueResponsable.classList.remove("hidden");
+    } else {
+        bloqueResponsable.classList.add("hidden");
     }
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-    return signaturePad;
 }
 
-const firmaTec = crearFirma(document.getElementById("firmaTec"));
+document.getElementById("uploadTec").addEventListener("change", e => cargarImagen(e,firmaTec));
+document.getElementById("uploadRes").addEventListener("change", e => cargarImagen(e,firmaRes));
 
-// -------- PDF PROFESIONAL --------
+function cargarImagen(event, signaturePad){
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(){
+        const img = new Image();
+        img.onload = function(){
+            const canvas = signaturePad.canvas;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        }
+        img.src = reader.result;
+    }
+    reader.readAsDataURL(file);
+}
+
+function expandirFirma(id){
+    const canvasOriginal = document.getElementById(id);
+    const overlay = document.createElement("div");
+    overlay.className = "fullscreen-canvas";
+    const nuevoCanvas = document.createElement("canvas");
+    overlay.appendChild(nuevoCanvas);
+    const btn = document.createElement("button");
+    btn.innerText = "Guardar y Cerrar";
+    overlay.appendChild(btn);
+    document.body.appendChild(overlay);
+    const firmaGrande = new SignaturePad(nuevoCanvas);
+    btn.onclick = function(){
+        const img = firmaGrande.toDataURL();
+        const ctx = canvasOriginal.getContext("2d");
+        const image = new Image();
+        image.onload = function(){
+            ctx.clearRect(0,0,canvasOriginal.width,canvasOriginal.height);
+            ctx.drawImage(image,0,0,canvasOriginal.width,canvasOriginal.height);
+        }
+        image.src = img;
+        document.body.removeChild(overlay);
+    }
+}
 
 function generarPDF(){
 
+    const tipo = tipoInforme.value;
+
     if(firmaTec.isEmpty()){
-        alert("Debe firmar el técnico");
+        alert("Firma del técnico obligatoria.");
+        return;
+    }
+
+    if(tipo === "reparacion" && firmaRes.isEmpty()){
+        alert("Firma del responsable obligatoria.");
         return;
     }
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    let y=20;
+    let y = 45;
 
-    doc.addImage("logo.png","PNG",10,10,50,25);
-    doc.setFontSize(12);
-    doc.text("DEPARTAMENTO DE SISTEMAS E INFORMATICA",105,15,null,null,"center");
-    doc.text("FORMATO PARA INFORME TECNICO",105,22,null,null,"center");
+    // Logo en PDF
+    doc.addImage("logo.png","PNG",10,10,60,25);
 
-    y=40;
+    doc.setFillColor(176,0,32);
+    doc.rect(0,35,210,12,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(13);
+    doc.text("INFORME TÉCNICO DE REVISIÓN DE EQUIPO",105,43,null,null,"center");
 
+    doc.setTextColor(0,0,0);
     doc.setFontSize(11);
-    doc.text("Consecutivo: "+consecutivo.value,10,y); y+=7;
-    doc.text("Fecha: "+fecha.value,10,y); y+=10;
+    y = 55;
 
-    doc.text("Dependencia: "+dependencia.value,10,y); y+=7;
-    doc.text("Ubicación: "+ubicacion.value,10,y); y+=10;
+    function titulo(texto){
+        doc.setTextColor(176,0,32);
+        doc.setFontSize(12);
+        doc.text(texto,10,y);
+        y+=8;
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(11);
+    }
 
-    doc.text("Equipo: "+equipo.value,10,y); y+=7;
-    doc.text("Serial: "+serial.value,10,y); y+=7;
-    doc.text("Inventario: "+inventario.value,10,y); y+=10;
+    function campo(label, valor){
+        doc.text(label + " " + valor,15,y);
+        y+=7;
+    }
 
-    doc.text("Descripción:",10,y); y+=7;
-    doc.text(doc.splitTextToSize(descripcion.value,180),10,y);
-    y+=25;
+    titulo("1. Ficha Técnica de la revisión del equipo");
+    campo("Fecha:", fecha.value);
+    y+=3;
 
-    const img = firmaTec.toDataURL("image/png");
-    doc.addImage(img,"PNG",75,y,60,30);
-    y+=35;
-    doc.text(nombreTec.value,105,y,null,null,"center");
-    y+=5;
-    doc.text(cargoTec.value,105,y,null,null,"center");
+    titulo("2. Descripción Dependencia");
+    campo("Dependencia:", dependencia.value);
+    campo("Ubicación:", ubicacion.value);
+    if(datasoft.value !== ""){
+        campo("Código DATASOFT:", datasoft.value);
+    }
+    y+=3;
 
-    doc.save(consecutivo.value+".pdf");
+    titulo("3. Descripción de los equipos revisados");
+    campo("Equipo:", equipo.value);
+    campo("Serial:", serial.value);
+    campo("Inventario:", inventario.value);
+    y+=3;
+
+    titulo("4. Diagnóstico");
+    doc.text(doc.splitTextToSize(diagnostico.value,170),15,y);
+    y+=15;
+
+    titulo("5. Procedimiento");
+    doc.text(doc.splitTextToSize(procedimiento.value,170),15,y);
+    y+=15;
+
+    titulo("6. Conclusión");
+    doc.text(doc.splitTextToSize(conclusion.value,170),15,y);
+    y+=20;
+
+    const imgTec = firmaTec.toDataURL();
+    doc.addImage(imgTec,"PNG",20,y,60,30);
+    doc.line(20,y+35,80,y+35);
+    doc.text(nombreTec.value,50,y+42,null,null,"center");
+    doc.text(cargoTec.value,50,y+48,null,null,"center");
+
+    if(tipo === "reparacion"){
+        const imgRes = firmaRes.toDataURL();
+        doc.addImage(imgRes,"PNG",120,y,60,30);
+        doc.line(120,y+35,180,y+35);
+        doc.text(nombreRes.value,150,y+42,null,null,"center");
+        doc.text(cargoRes.value,150,y+48,null,null,"center");
+    }
+
+    doc.save("Informe_Tecnico.pdf");
 }
-
-// -------- PWA --------
-
-if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js');
-}
-
 </script>
 
 </body>
 </html>
+
+
