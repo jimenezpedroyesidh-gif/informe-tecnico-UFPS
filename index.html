@@ -363,8 +363,6 @@ function expandirFirma(id){
         window.removeEventListener("orientationchange", ajustarCanvas);
     };
 }
-
-
 function generarPDF(){
 
     const tipo = tipoInforme.value;
@@ -381,38 +379,133 @@ function generarPDF(){
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    let y = 45;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginBottom = 25;
 
-    // Logo en PDF
-    doc.addImage("logo.png","PNG",10,10,120,26);
+    let y = 55;
 
-    doc.setFillColor(176,0,32);
-    doc.rect(0,35,210,12,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(13);
-    doc.text("INFORME TÉCNICO DE REVISIÓN DE EQUIPO",105,43,null,null,"center");
+    // ========= ENCABEZADO =========
+    function dibujarEncabezado(){
+        doc.addImage("logo.png","PNG",10,10,120,26);
 
-    doc.setTextColor(0,0,0);
-    doc.setFontSize(11);
-    y = 55;
+        doc.setFillColor(176,0,32);
+        doc.rect(0,35,pageWidth,12,'F');
+
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(13);
+        doc.text("INFORME TÉCNICO DE REVISIÓN DE EQUIPO",pageWidth/2,43,null,null,"center");
+
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(11);
+    }
+
+    // ========= PIE DE PÁGINA =========
+    function dibujarPie(){
+        const totalPaginas = doc.internal.getNumberOfPages();
+        for(let i=1; i<=totalPaginas; i++){
+            doc.setPage(i);
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text(
+                "Sistema Institucional de Mantenimiento",
+                10,
+                pageHeight-10
+            );
+            doc.text(
+                "Página " + i + " de " + totalPaginas,
+                pageWidth-40,
+                pageHeight-10
+            );
+        }
+    }
+
+    // ========= CONTROL DE PÁGINA =========
+    function verificarPagina(espacioNecesario){
+        if(y + espacioNecesario > pageHeight - marginBottom){
+            doc.addPage();
+            dibujarEncabezado();
+            y = 55;
+        }
+    }
 
     function titulo(texto){
+        verificarPagina(12);
         doc.setTextColor(176,0,32);
         doc.setFontSize(12);
         doc.text(texto,10,y);
-        y+=8;
+        y += 8;
         doc.setTextColor(0,0,0);
         doc.setFontSize(11);
     }
 
     function campo(label, valor){
-        doc.text(label + " " + valor,15,y);
-        y+=7;
+        const lineas = doc.splitTextToSize(label + " " + valor,170);
+        verificarPagina(lineas.length * 6);
+        doc.text(lineas,15,y);
+        y += lineas.length * 6;
     }
 
-    titulo("1. Ficha Técnica de la revisión del equipo");
+    function bloqueTexto(texto){
+        const lineas = doc.splitTextToSize(texto,170);
+        verificarPagina(lineas.length * 6);
+        doc.text(lineas,15,y);
+        y += lineas.length * 6 + 5;
+    }
+
+    // ========= RECORTE AUTOMÁTICO FIRMA =========
+    function recortarFirma(dataURL){
+
+        const img = new Image();
+        img.src = dataURL;
+
+        const canvasTemp = document.createElement("canvas");
+        const ctxTemp = canvasTemp.getContext("2d");
+
+        return new Promise(resolve=>{
+            img.onload = function(){
+
+                canvasTemp.width = img.width;
+                canvasTemp.height = img.height;
+                ctxTemp.drawImage(img,0,0);
+
+                const imageData = ctxTemp.getImageData(0,0,canvasTemp.width,canvasTemp.height);
+                const pixels = imageData.data;
+
+                let top = null, bottom = null, left = null, right = null;
+
+                for(let y=0; y<canvasTemp.height; y++){
+                    for(let x=0; x<canvasTemp.width; x++){
+                        const index = (y * canvasTemp.width + x) * 4;
+                        const alpha = pixels[index+3];
+                        if(alpha > 0){
+                            if(top === null) top = y;
+                            bottom = y;
+                            if(left === null || x < left) left = x;
+                            if(right === null || x > right) right = x;
+                        }
+                    }
+                }
+
+                const width = right - left;
+                const height = bottom - top;
+
+                const recorte = ctxTemp.getImageData(left,top,width,height);
+
+                canvasTemp.width = width;
+                canvasTemp.height = height;
+                ctxTemp.putImageData(recorte,0,0);
+
+                resolve(canvasTemp.toDataURL("image/png"));
+            }
+        });
+    }
+
+    // ========= GENERACIÓN =========
+    dibujarEncabezado();
+
+    titulo("1. Ficha Técnica");
     campo("Fecha:", fecha.value);
-    y+=3;
 
     titulo("2. Descripción Dependencia");
     campo("Dependencia:", dependencia.value);
@@ -420,46 +513,53 @@ function generarPDF(){
     if(datasoft.value !== ""){
         campo("Código DATASOFT:", datasoft.value);
     }
-    y+=3;
 
-    titulo("3. Descripción de los equipos revisados");
+    titulo("3. Descripción del Equipo");
     campo("Equipo:", equipo.value);
     campo("Serial:", serial.value);
     campo("Inventario:", inventario.value);
-    y+=3;
 
     titulo("4. Diagnóstico");
-    doc.text(doc.splitTextToSize(diagnostico.value,170),15,y);
-    y+=15;
+    bloqueTexto(diagnostico.value);
 
     titulo("5. Procedimiento");
-    doc.text(doc.splitTextToSize(procedimiento.value,170),15,y);
-    y+=15;
+    bloqueTexto(procedimiento.value);
 
     titulo("6. Conclusión");
-    doc.text(doc.splitTextToSize(conclusion.value,170),15,y);
-    y+=20;
+    bloqueTexto(conclusion.value);
 
-    const imgTec = firmaTec.toDataURL();
-    doc.addImage(imgTec,"PNG",20,y,60,30);
-    doc.line(20,y+35,80,y+35);
-    doc.text(nombreTec.value,50,y+42,null,null,"center");
-    doc.text(cargoTec.value,50,y+48,null,null,"center");
+    // ========= FIRMAS =========
+    verificarPagina(60);
 
-    if(tipo === "reparacion"){
-        const imgRes = firmaRes.toDataURL();
-        doc.addImage(imgRes,"PNG",120,y,60,30);
-        doc.line(120,y+35,180,y+35);
-        doc.text(nombreRes.value,150,y+42,null,null,"center");
-        doc.text(cargoRes.value,150,y+48,null,null,"center");
-    }
+    Promise.all([
+        recortarFirma(firmaTec.toDataURL()),
+        tipo === "reparacion" ? recortarFirma(firmaRes.toDataURL()) : null
+    ]).then(resultados=>{
 
-    doc.save("Informe_Tecnico.pdf");
+        doc.addImage(resultados[0],"PNG",20,y,60,30);
+        doc.line(20,y+35,80,y+35);
+        doc.text(nombreTec.value,50,y+42,null,null,"center");
+        doc.text(cargoTec.value,50,y+48,null,null,"center");
+
+        if(tipo === "reparacion"){
+            doc.addImage(resultados[1],"PNG",120,y,60,30);
+            doc.line(120,y+35,180,y+35);
+            doc.text(nombreRes.value,150,y+42,null,null,"center");
+            doc.text(cargoRes.value,150,y+48,null,null,"center");
+        }
+
+        dibujarPie();
+        doc.save("Informe_Tecnico.pdf");
+    });
 }
+
+
+
 </script>
 
 </body>
 </html>
+
 
 
 
