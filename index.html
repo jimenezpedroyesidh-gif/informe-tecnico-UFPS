@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Técnico UFPS</title>
+
+<link rel="manifest" href="manifest.json">
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<style>
+*{box-sizing:border-box;}
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f2f2f2;
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    background:#d40000;
+    color:white;
+    padding:10px;
+}
+
+.header img{
+    height:60px;
+    margin-right:15px;
+}
+
+.header-text{
+    font-weight:bold;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    padding:15px;
+    background:white;
+}
+
+.section{
+    margin-bottom:15px;
+}
+
+.section h3{
+    background:#d40000;
+    color:white;
+    padding:6px;
+    font-size:14px;
+}
+
+input,textarea,select{
+    width:100%;
+    padding:10px;
+    margin:6px 0;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+
+textarea{min-height:90px;}
+
+canvas{
+    width:100%;
+    height:180px;
+    border:2px solid #d40000;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#d40000;
+    color:white;
+    border:none;
+    border-radius:6px;
+    margin-top:6px;
+}
+
+button:hover{background:#990000;}
+
+@media(max-width:600px){
+    canvas{height:220px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+<img src="logo.png">
+<div class="header-text">
+DEPARTAMENTO DE SISTEMAS E INFORMATICA<br>
+FORMATO PARA INFORME TECNICO
+</div>
+</div>
+
+<div class="container">
+
+<div class="section">
+<h3>Consecutivo</h3>
+<input id="consecutivo" readonly>
+</div>
+
+<div class="section">
+<h3>Fecha</h3>
+<input type="date" id="fecha">
+</div>
+
+<div class="section">
+<h3>Dependencia</h3>
+<input id="dependencia">
+<input id="ubicacion" placeholder="Ubicación">
+</div>
+
+<div class="section">
+<h3>Equipo</h3>
+<input id="equipo">
+<input id="serial" placeholder="Serial">
+<input id="inventario" placeholder="Inventario">
+</div>
+
+<div class="section">
+<h3>Descripción</h3>
+<textarea id="descripcion"></textarea>
+</div>
+
+<div class="section">
+<h3>Firma Técnico</h3>
+<input id="nombreTec" placeholder="Nombre">
+<input id="cargoTec" placeholder="Cargo">
+<canvas id="firmaTec"></canvas>
+<button onclick="firmaTec.clear()">Limpiar</button>
+</div>
+
+<button onclick="generarPDF()">Generar Informe PDF</button>
+
+</div>
+
+<script>
+
+// -------- NUMERACIÓN AUTOMÁTICA --------
+
+function generarConsecutivo(){
+    let num = localStorage.getItem("contadorInforme");
+    if(!num){ num = 1; }
+    else{ num = parseInt(num)+1; }
+    localStorage.setItem("contadorInforme", num);
+
+    const año = new Date().getFullYear();
+    const formato = "IT-"+año+"-"+String(num).padStart(4,'0');
+    document.getElementById("consecutivo").value = formato;
+}
+generarConsecutivo();
+
+// -------- FIRMA PRECISA --------
+
+function crearFirma(canvas){
+    const signaturePad = new SignaturePad(canvas,{
+        minWidth:0.8,
+        maxWidth:2.5,
+        throttle:0
+    });
+
+    function resizeCanvas(){
+        const ratio = Math.max(window.devicePixelRatio||1,1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio,ratio);
+        signaturePad.clear();
+    }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    return signaturePad;
+}
+
+const firmaTec = crearFirma(document.getElementById("firmaTec"));
+
+// -------- PDF PROFESIONAL --------
+
+function generarPDF(){
+
+    if(firmaTec.isEmpty()){
+        alert("Debe firmar el técnico");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y=20;
+
+    doc.addImage("logo.png","PNG",10,10,50,25);
+    doc.setFontSize(12);
+    doc.text("DEPARTAMENTO DE SISTEMAS E INFORMATICA",105,15,null,null,"center");
+    doc.text("FORMATO PARA INFORME TECNICO",105,22,null,null,"center");
+
+    y=40;
+
+    doc.setFontSize(11);
+    doc.text("Consecutivo: "+consecutivo.value,10,y); y+=7;
+    doc.text("Fecha: "+fecha.value,10,y); y+=10;
+
+    doc.text("Dependencia: "+dependencia.value,10,y); y+=7;
+    doc.text("Ubicación: "+ubicacion.value,10,y); y+=10;
+
+    doc.text("Equipo: "+equipo.value,10,y); y+=7;
+    doc.text("Serial: "+serial.value,10,y); y+=7;
+    doc.text("Inventario: "+inventario.value,10,y); y+=10;
+
+    doc.text("Descripción:",10,y); y+=7;
+    doc.text(doc.splitTextToSize(descripcion.value,180),10,y);
+    y+=25;
+
+    const img = firmaTec.toDataURL("image/png");
+    doc.addImage(img,"PNG",75,y,60,30);
+    y+=35;
+    doc.text(nombreTec.value,105,y,null,null,"center");
+    y+=5;
+    doc.text(cargoTec.value,105,y,null,null,"center");
+
+    doc.save(consecutivo.value+".pdf");
+}
+
+// -------- PWA --------
+
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js');
+}
+
+</script>
+
+</body>
+</html>
