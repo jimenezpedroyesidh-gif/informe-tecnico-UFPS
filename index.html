@@ -230,71 +230,84 @@ function expandirFirma(id){
 
     const canvasOriginal = document.getElementById(id);
 
+    // Overlay principal
     const overlay = document.createElement("div");
     overlay.style.position = "fixed";
     overlay.style.top = "0";
     overlay.style.left = "0";
     overlay.style.width = "100vw";
     overlay.style.height = "100vh";
-    overlay.style.background = "#fff";
+    overlay.style.background = "#ffffff";
     overlay.style.zIndex = "9999";
     overlay.style.display = "flex";
     overlay.style.flexDirection = "column";
-    overlay.style.padding = "10px";
     overlay.style.boxSizing = "border-box";
 
-    const canvasContainer = document.createElement("div");
-    canvasContainer.style.flex = "1";
-    canvasContainer.style.width = "100%";
-    canvasContainer.style.display = "flex";
-    canvasContainer.style.alignItems = "center";
-    canvasContainer.style.justifyContent = "center";
-    overlay.appendChild(canvasContainer);
+    // ===== HEADER CON BOTONES (SIEMPRE VISIBLE) =====
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.gap = "10px";
+    header.style.padding = "10px";
+    header.style.background = "#b00020";
+    header.style.flexShrink = "0";
 
-    const nuevoCanvas = document.createElement("canvas");
-    nuevoCanvas.style.width = "100%";
-    nuevoCanvas.style.height = "100%";
-    nuevoCanvas.style.border = "3px solid #b00020";
-    nuevoCanvas.style.borderRadius = "12px";
-    nuevoCanvas.style.touchAction = "none"; // 🔥 importante para precisión
-    canvasContainer.appendChild(nuevoCanvas);
-
-    const botones = document.createElement("div");
-    botones.style.display = "flex";
-    botones.style.gap = "10px";
-    botones.style.marginTop = "10px";
+    const btnCancelar = document.createElement("button");
+    btnCancelar.innerText = "Cancelar";
+    btnCancelar.style.flex = "1";
+    btnCancelar.style.background = "#ffffff";
+    btnCancelar.style.color = "#b00020";
+    btnCancelar.style.fontWeight = "bold";
 
     const btnLimpiar = document.createElement("button");
     btnLimpiar.innerText = "Limpiar";
     btnLimpiar.style.flex = "1";
 
     const btnGuardar = document.createElement("button");
-    btnGuardar.innerText = "Guardar";
+    btnGuardar.innerText = "Guardar y salir";
     btnGuardar.style.flex = "1";
+    btnGuardar.style.background = "#ffffff";
+    btnGuardar.style.color = "#b00020";
+    btnGuardar.style.fontWeight = "bold";
 
-    botones.appendChild(btnLimpiar);
-    botones.appendChild(btnGuardar);
-    overlay.appendChild(botones);
+    header.appendChild(btnCancelar);
+    header.appendChild(btnLimpiar);
+    header.appendChild(btnGuardar);
+    overlay.appendChild(header);
+
+    // ===== CONTENEDOR DEL CANVAS =====
+    const canvasContainer = document.createElement("div");
+    canvasContainer.style.flex = "1";
+    canvasContainer.style.width = "100%";
+    canvasContainer.style.position = "relative";
+    overlay.appendChild(canvasContainer);
+
+    const nuevoCanvas = document.createElement("canvas");
+    nuevoCanvas.style.width = "100%";
+    nuevoCanvas.style.height = "100%";
+    nuevoCanvas.style.border = "3px solid #b00020";
+    nuevoCanvas.style.borderRadius = "0";
+    nuevoCanvas.style.touchAction = "none";
+    nuevoCanvas.style.display = "block";
+    canvasContainer.appendChild(nuevoCanvas);
 
     document.body.appendChild(overlay);
 
     let firmaGrande;
 
+    // ===== AJUSTE RESPONSIVE REAL =====
     function ajustarCanvas(){
 
         const rect = canvasContainer.getBoundingClientRect();
         const ratio = window.devicePixelRatio || 1;
 
-        // 🔥 Asignar tamaño interno EXACTO
         nuevoCanvas.width = rect.width * ratio;
         nuevoCanvas.height = rect.height * ratio;
 
-        // 🔥 Mantener tamaño visual
         nuevoCanvas.style.width = rect.width + "px";
         nuevoCanvas.style.height = rect.height + "px";
 
         const ctx = nuevoCanvas.getContext("2d");
-        ctx.setTransform(1,0,0,1,0,0); // reset transform
+        ctx.setTransform(1,0,0,1,0,0);
         ctx.scale(ratio, ratio);
 
         if(firmaGrande){
@@ -315,6 +328,14 @@ function expandirFirma(id){
 
     window.addEventListener("resize", ajustarCanvas);
     window.addEventListener("orientationchange", ajustarCanvas);
+
+    // ===== BOTONES =====
+
+    btnCancelar.onclick = function(){
+        document.body.removeChild(overlay);
+        window.removeEventListener("resize", ajustarCanvas);
+        window.removeEventListener("orientationchange", ajustarCanvas);
+    };
 
     btnLimpiar.onclick = function(){
         firmaGrande.clear();
@@ -439,6 +460,7 @@ function generarPDF(){
 
 </body>
 </html>
+
 
 
 
